@@ -48,7 +48,9 @@ a { color: inherit; }
   background: rgba(22, 22, 46, 0.75);
   backdrop-filter: blur(8px);
   font-size: 13px;
+  -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
 }
 .panel .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .panel .label { color: var(--muted); min-width: 44px; }

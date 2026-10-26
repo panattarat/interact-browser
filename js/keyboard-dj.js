@@ -279,7 +279,7 @@ const EFFECTS = {
   reverse: { rate: 1, reverse: true },
 };
 
-const state = { effect: 'normal', recArm: false };
+const state = { effect: 'normal', recArm: false, eraseArm: false };
 
 // เบราว์เซอร์ให้เริ่มเสียงได้หลังผู้ใช้คลิก/กดปุ่มเท่านั้น
 function unlock() {
@@ -376,10 +376,14 @@ function buildPads() {
       renderPad(pad);
       rowEl.appendChild(el);
 
+      let pointerType = 'mouse';
       el.addEventListener('pointerdown', e => {
+        pointerType = e.pointerType;
         if (e.button !== 0) return;
         unlock();
-        if (state.recArm || e.shiftKey) {
+        if (state.eraseArm) {
+          clearCustom(code);
+        } else if (state.recArm || e.shiftKey) {
           el.setPointerCapture(e.pointerId);
           startPadRecording(code);
         } else {
@@ -388,9 +392,10 @@ function buildPads() {
       });
       el.addEventListener('pointerup', () => stopPadRecording(code));
       el.addEventListener('pointercancel', () => stopPadRecording(code));
+      // คลิกขวา = ลบเสียงที่อัด แต่บนมือถือการกดค้างก็ยิง contextmenu ด้วย — ต้องไม่ลบ
       el.addEventListener('contextmenu', e => {
         e.preventDefault();
-        clearCustom(code);
+        if (pointerType === 'mouse') clearCustom(code);
       });
       el.addEventListener('wheel', e => {
         e.preventDefault();
@@ -407,6 +412,7 @@ function buildPads() {
 // ---------- อัดเสียงลงปุ่ม ----------
 
 const MAX_REC_MS = 10000;
+const MIN_REC_MS = 300; // แตะพลาดสั้นๆ ไม่นับ จะได้ไม่ทับเสียงเดิม
 let mic = null;
 let padRec = null; // { code, recorder?, timer? }
 
@@ -434,7 +440,14 @@ async function startPadRecording(code) {
   const recorder = new MediaRecorder(mic);
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-  recorder.onstop = () => finishPadRecording(code, new Blob(chunks, { type: recorder.mimeType }));
+  const startedAt = performance.now();
+  recorder.onstop = () => {
+    if (performance.now() - startedAt < MIN_REC_MS) {
+      setStatus('🎙️ อัดสั้นไป — กดค้างไว้แล้วพูด ปล่อยเมื่อเสร็จ (เสียงเดิมยังอยู่)');
+      return;
+    }
+    finishPadRecording(code, new Blob(chunks, { type: recorder.mimeType }));
+  };
   recorder.start();
   padRec = { code, recorder, timer: setTimeout(() => stopPadRecording(code), MAX_REC_MS) };
   setStatus(`🔴 กำลังอัดเสียงลงปุ่ม ${code.replace('Key', '')} — ปล่อยเพื่อหยุด`);
@@ -727,10 +740,20 @@ document.getElementById('master').addEventListener('input', e => { master.gain.v
 exportBtn.addEventListener('click', toggleExport);
 
 const recArmBtn = document.getElementById('rec-arm');
+const eraseArmBtn = document.getElementById('erase-arm');
+function setArm(rec, erase) {
+  state.recArm = rec;
+  state.eraseArm = erase;
+  recArmBtn.classList.toggle('rec', rec);
+  eraseArmBtn.classList.toggle('rec', erase);
+}
 recArmBtn.addEventListener('click', () => {
-  state.recArm = !state.recArm;
-  recArmBtn.classList.toggle('rec', state.recArm);
+  setArm(!state.recArm, false);
   setStatus(state.recArm ? '🎙️ โหมดอัด: กดค้างที่ปุ่มไหนก็ได้เพื่ออัดเสียงลงปุ่มนั้น' : '🎶 กลับมาโหมดเล่นแล้ว');
+});
+eraseArmBtn.addEventListener('click', () => {
+  setArm(false, !state.eraseArm);
+  setStatus(state.eraseArm ? '🧽 โหมดลบ: แตะปุ่มที่อยากลบเสียงที่อัดไว้' : '🎶 กลับมาโหมดเล่นแล้ว');
 });
 
 loopRecBtn.addEventListener('click', looperRecordToggle);
@@ -804,6 +827,9 @@ async function init() {
     pad.buffer = await renderPreset(pad.build, pad.dur);
   }));
   setStatus('🎶 กดปุ่มบนคีย์บอร์ดเพื่อเริ่มเล่นได้เลย!');
+
+  // ขอให้เบราว์เซอร์ไม่ล้างข้อมูลเองเมื่อพื้นที่เหลือน้อย (Safari ล้างทิ้งถ้าไม่ได้เปิดนานๆ)
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
   try {
     const saved = await store.all();
