@@ -5,3 +5,4 @@ wrangler.jsonc
 usecase.md
 node_modules
 .gitignore
+worker
