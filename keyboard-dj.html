@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Keyboard DJ</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { background: #07070f; }
+    #viz { position: fixed; inset: 0; z-index: 0; }
+
+    .dj {
+      position: relative;
+      z-index: 1;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 64px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .topbar { text-align: center; }
+    .topbar h1 { margin: 0 0 6px; font-size: 32px; }
+    .status { color: var(--accent); min-height: 1.4em; }
+
+    .bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: rgba(22, 22, 46, 0.7);
+      backdrop-filter: blur(8px);
+      font-size: 13px;
+    }
+    .group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .group .label { color: var(--muted); }
+    .bar input[type="range"] { width: 110px; accent-color: var(--accent); }
+    .chip.rec { background: #ff3b5c; border-color: #ff3b5c; color: #fff; }
+
+    /* แผงปุ่ม */
+    .pads { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .pad-row { display: flex; gap: 6px; justify-content: center; }
+    .pad {
+      --c: 255, 120, 180;
+      --size: min(76px, calc((100vw - 32px - 54px) / 10));
+      position: relative;
+      width: var(--size);
+      height: var(--size);
+      border-radius: 12px;
+      border: 1px solid rgba(var(--c), 0.5);
+      background: rgba(var(--c), 0.14);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      touch-action: none;
+      overflow: hidden;
+    }
+    .pad:hover { background: rgba(var(--c), 0.24); }
+    .pad[data-row="1"] { --c: 90, 210, 255; }
+    .pad[data-row="2"] { --c: 180, 140, 255; }
+    .pad.custom { --c: 120, 255, 160; }
+    .pad .key { position: absolute; top: 3px; left: 6px; font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
+    .pad .emoji { font-size: calc(var(--size) * 0.38); line-height: 1; }
+    .pad .name { font-size: 10px; margin-top: 3px; color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+    .pad .vol { position: absolute; left: 0; bottom: 0; height: 3px; background: rgba(var(--c), 0.9); }
+    .pad.rec { --c: 255, 59, 92; animation: pulse 0.6s ease-in-out infinite alternate; }
+    @keyframes pulse { to { background: rgba(255, 59, 92, 0.5); } }
+
+    /* looper */
+    .beats { display: flex; gap: 4px; }
+    .beat { width: 22px; height: 22px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); }
+    .beat.bar-start { background: rgba(255, 255, 255, 0.16); }
+    .beat.now { background: var(--accent); }
+    .looper-state { min-width: 130px; color: var(--muted); }
+    .looper-state.recording { color: #ff6b81; }
+    .looper-state.playing { color: #7dffa8; }
+
+    .help {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 6px 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 600px) {
+      .pad .name { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="viz"></canvas>
+
+  <main class="dj">
+    <header class="topbar">
+      <h1>🎧 Keyboard DJ</h1>
+      <div class="status" id="status">กำลังเตรียมเสียง…</div>
+    </header>
+
+    <section class="bar">
+      <div class="group" id="effects">
+        <span class="label">เอฟเฟกต์</span>
+        <button class="chip active" data-value="normal">1 ปกติ</button>
+        <button class="chip" data-value="chipmunk">2 🐿️ ชิพมังก์</button>
+        <button class="chip" data-value="giant">3 👹 ยักษ์</button>
+        <button class="chip" data-value="echo">4 🏔️ ก้อง</button>
+        <button class="chip" data-value="reverse">5 ⏪ ย้อนกลับ</button>
+      </div>
+      <div class="group">
+        <span class="label">เสียงรวม</span>
+        <input type="range" id="master" min="0" max="1.5" step="0.05" value="0.8">
+      </div>
+      <div class="group">
+        <button class="chip" id="rec-arm">🎙️ โหมดอัดลงปุ่ม</button>
+        <button class="chip" id="export">⏺ อัดการแสดง</button>
+      </div>
+    </section>
+
+    <section class="pads" id="pads"></section>
+
+    <section class="bar">
+      <div class="group">
+        <span class="label">ลูป</span>
+        <button class="chip" id="loop-rec">⏺ อัด</button>
+        <button class="chip" id="loop-play">▶ เล่น</button>
+        <button class="chip" id="loop-undo">↩️ ลบเลเยอร์ล่าสุด</button>
+        <button class="chip" id="loop-clear">🗑 ล้าง</button>
+      </div>
+      <div class="beats" id="beats"></div>
+      <div class="looper-state" id="loop-state">⏹ หยุดอยู่</div>
+      <div class="group">
+        <span class="label">BPM</span>
+        <input type="range" id="bpm" min="60" max="180" value="110">
+        <span id="bpm-value">110</span>
+      </div>
+      <div class="group">
+        <button class="chip active" id="metronome">🎵 เมโทรนอมตอนอัด</button>
+        <button class="chip active" id="quantize">🧲 ตรงจังหวะ</button>
+      </div>
+    </section>
+
+    <section class="help">
+      <div>⌨️ กดปุ่ม = เล่นเสียง (กดหลายปุ่มพร้อมกันได้)</div>
+      <div>🎙️ <kbd>Shift</kbd> ค้าง + ปุ่ม = อัดเสียงลงปุ่ม ปล่อยเพื่อหยุด</div>
+      <div>🧽 <kbd>Alt</kbd>/<kbd>⌥</kbd> + ปุ่ม หรือคลิกขวา = ลบเสียงที่อัด</div>
+      <div>🖱️ หมุนล้อเมาส์บนปุ่ม = ปรับความดังรายปุ่ม</div>
+      <div>✨ <kbd>1</kbd>–<kbd>5</kbd> = เปลี่ยนเอฟเฟกต์</div>
+      <div>🔁 <kbd>Space</kbd> อัดลูป/อัดทับ · <kbd>Enter</kbd> เล่น/หยุด</div>
+      <div>🗑 <kbd>Backspace</kbd> ล้างลูป · <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Z</kbd> ลบเลเยอร์ล่าสุด</div>
+      <div>🇹🇭 แป้นภาษาไทยก็กดได้ (ใช้ตำแหน่งปุ่ม)</div>
+    </section>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/keyboard-dj.js"></script>
+</body>
+</html>

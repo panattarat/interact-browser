@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Ghost Mirror</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { overflow: hidden; background: #000; }
+    canvas { display: block; }
+    video { display: none; }
+
+    .start {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 16px;
+      text-align: center;
+      background: radial-gradient(circle at center, #1d1240, #000 70%);
+      z-index: 5;
+      transition: opacity 0.5s;
+    }
+    .start.hidden { opacity: 0; pointer-events: none; }
+    body:not(.started) .panel { display: none; }
+    .start h1 { margin: 0; font-size: 36px; }
+    .start p { margin: 0; color: var(--muted); max-width: 420px; line-height: 1.6; }
+    .error { color: #ff8fa3; max-width: 420px; line-height: 1.6; }
+
+    .panel input[type="range"] { width: 120px; accent-color: var(--accent); }
+    .status { color: var(--accent); max-width: 300px; line-height: 1.4; }
+    .status:empty { display: none; }
+
+    .flash {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+      z-index: 20;
+    }
+    .flash.on { opacity: 0.8; transition: none; }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <video id="video" playsinline muted></video>
+  <div class="flash" id="flash"></div>
+
+  <div class="start" id="start">
+    <div style="font-size: 64px">🪞</div>
+    <h1>Ghost Mirror</h1>
+    <p>ส่องกระจกแล้วค่อยๆ ขยับตัว — จะมีร่างของคุณลากตามเป็นเงาซ้ำๆ ยิ่งขยับช้าๆ ยิ่งสวย</p>
+    <button class="big-btn" id="start-btn">📷 เปิดกล้อง</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="panel">
+    <div class="status" id="status"></div>
+    <div class="row" id="modes">
+      <span class="label">โหมด</span>
+      <button class="chip active" data-value="ai">🧠 ตัดตัวคน</button>
+      <button class="chip" data-value="motion">🌀 จับการขยับ</button>
+      <button class="chip" data-value="echo">🎞️ ภาพซ้อน</button>
+    </div>
+    <div class="row" id="tints">
+      <span class="label">สีเงา</span>
+      <button class="chip active" data-value="rainbow">🌈 รุ้ง</button>
+      <button class="chip" data-value="ghost">👻 ผี</button>
+      <button class="chip" data-value="real">🙂 สีจริง</button>
+    </div>
+    <div class="row" id="backgrounds">
+      <span class="label">ฉาก</span>
+      <button class="chip active" data-value="dark">🌑 มืด</button>
+      <button class="chip" data-value="room">🏠 ห้องจริง</button>
+    </div>
+    <div class="row">
+      <span class="label">จำนวน</span>
+      <input type="range" id="count" min="3" max="40" value="15">
+    </div>
+    <div class="row">
+      <span class="label">หางยาว</span>
+      <input type="range" id="lifetime" min="500" max="6000" step="100" value="2500">
+    </div>
+    <div class="row pin">
+      <button class="chip" id="snap">📸 ถ่ายรูป</button>
+    </div>
+    <div class="row" style="color: var(--muted)">
+      <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> โหมด · <kbd>C</kbd> สี · <kbd>B</kbd> ฉาก · <kbd>S</kbd> ถ่ายรูป
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/ghost-mirror.js"></script>
+</body>
+</html>

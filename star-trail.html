@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Star Trail</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { overflow: hidden; cursor: crosshair; touch-action: none; background: #05050f; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <div class="hint" id="hint">
+    <h1>ลากเมาส์หรือนิ้วเลย ✨</h1>
+    <div>ยิ่งลากเร็ว ดาวยิ่งเยอะ · กดค้างเพื่อระเบิดดาว</div>
+    <div style="margin-top: 6px">🔊 แตะหนึ่งครั้งเพื่อเปิดเสียง</div>
+  </div>
+
+  <div class="panel">
+    <div class="row" id="shapes">
+      <span class="label">รูปร่าง</span>
+      <button class="chip active" data-value="star">⭐ ดาว</button>
+      <button class="chip" data-value="heart">💖 หัวใจ</button>
+      <button class="chip" data-value="emoji">🎉 อีโมจิ</button>
+    </div>
+    <div class="row" id="colors">
+      <span class="label">สี</span>
+      <button class="chip active" data-value="rainbow">🌈 รุ้ง</button>
+      <button class="chip" data-value="gold">✨ ทอง</button>
+      <button class="chip" data-value="speed">⚡ ตามความเร็ว</button>
+    </div>
+    <div class="row">
+      <span class="label">เสียง</span>
+      <button class="chip active" id="sound-toggle">🔊 เปิด</button>
+    </div>
+    <div class="row" style="color: var(--muted)">
+      <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> รูปร่าง · <kbd>C</kbd> สี · <kbd>M</kbd> เสียง · <kbd>Space</kbd> ล้างจอ
+    </div>
+  </div>
+
+  <script src="js/common.js"></script>
+  <script src="js/star-trail.js"></script>
+</body>
+</html>
